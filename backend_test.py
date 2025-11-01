@@ -23,9 +23,10 @@ class SalesDeckAPITester:
         url = f"{self.api_url}/{endpoint}"
         test_headers = {'Content-Type': 'application/json'}
         
-        # Add authorization header
+        # Use cookies for authentication (backend expects cookies)
+        cookies = {}
         if self.session_token:
-            test_headers['Authorization'] = f'Bearer {self.session_token}'
+            cookies['session_token'] = self.session_token
         
         if headers:
             test_headers.update(headers)
