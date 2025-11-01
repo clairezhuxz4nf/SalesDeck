@@ -102,7 +102,7 @@ class DeckGenerateRequest(BaseModel):
     lead_id: str
 
 # Authentication helper
-async def get_current_user(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = None) -> User:
+async def get_current_user(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)) -> User:
     token = session_token
     if not token and authorization:
         if authorization.startswith('Bearer '):
