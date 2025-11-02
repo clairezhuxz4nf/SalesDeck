@@ -12,6 +12,7 @@ import uuid
 from datetime import datetime, timezone, timedelta
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 import json
+import base64
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -57,6 +58,11 @@ class ClientCreate(BaseModel):
     industry: str
     description: str
 
+class ClientUpdate(BaseModel):
+    name: Optional[str] = None
+    industry: Optional[str] = None
+    description: Optional[str] = None
+
 class Asset(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -65,6 +71,8 @@ class Asset(BaseModel):
     name: str
     content: str
     file_url: Optional[str] = None
+    file_data: Optional[str] = None  # Base64 encoded file
+    file_name: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class AssetCreate(BaseModel):
@@ -88,6 +96,12 @@ class LeadCreate(BaseModel):
     client_id: str
     project_scope: str
     notes: str
+
+class LeadUpdate(BaseModel):
+    client_id: Optional[str] = None
+    project_scope: Optional[str] = None
+    notes: Optional[str] = None
+    status: Optional[str] = None
 
 class SalesDeck(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -230,6 +244,27 @@ async def get_clients(current_user: User = Depends(get_current_user)):
     
     return clients
 
+@api_router.patch("/clients/{client_id}", response_model=Client)
+async def update_client(client_id: str, client_data: ClientUpdate, current_user: User = Depends(get_current_user)):
+    update_data = {k: v for k, v in client_data.model_dump().items() if v is not None}
+    
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No data to update")
+    
+    result = await db.clients.update_one(
+        {"id": client_id, "user_id": current_user.id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    client = await db.clients.find_one({"id": client_id}, {"_id": 0})
+    if isinstance(client['created_at'], str):
+        client['created_at'] = datetime.fromisoformat(client['created_at'])
+    
+    return Client(**client)
+
 @api_router.delete("/clients/{client_id}")
 async def delete_client(client_id: str, current_user: User = Depends(get_current_user)):
     result = await db.clients.delete_one({"id": client_id, "user_id": current_user.id})
@@ -238,6 +273,38 @@ async def delete_client(client_id: str, current_user: User = Depends(get_current
     return {"success": True}
 
 # Asset Routes
+@api_router.post("/assets/upload")
+async def upload_asset(
+    file: UploadFile = File(...),
+    type: str = Form(...),
+    name: str = Form(...),
+    current_user: User = Depends(get_current_user)
+):
+    # Read file content
+    file_content = await file.read()
+    
+    # For text extraction, try to decode
+    try:
+        content = file_content.decode('utf-8')
+    except:
+        # If can't decode as text, store as base64
+        content = f"[Binary file: {file.filename}]"
+    
+    asset = Asset(
+        user_id=current_user.id,
+        type=type,
+        name=name,
+        content=content,
+        file_name=file.filename,
+        file_data=base64.b64encode(file_content).decode('utf-8')
+    )
+    
+    asset_dict = asset.model_dump()
+    asset_dict['created_at'] = asset_dict['created_at'].isoformat()
+    
+    await db.assets.insert_one(asset_dict)
+    return asset
+
 @api_router.post("/assets", response_model=Asset)
 async def create_asset(asset_data: AssetCreate, current_user: User = Depends(get_current_user)):
     asset = Asset(
@@ -302,15 +369,33 @@ async def get_leads(current_user: User = Depends(get_current_user)):
     
     return leads
 
-@api_router.patch("/leads/{lead_id}")
-async def update_lead_status(lead_id: str, status: str, current_user: User = Depends(get_current_user)):
+@api_router.patch("/leads/{lead_id}", response_model=Lead)
+async def update_lead(lead_id: str, lead_data: LeadUpdate, current_user: User = Depends(get_current_user)):
+    update_data = {k: v for k, v in lead_data.model_dump().items() if v is not None}
+    
+    # If client_id is being updated, get new client name
+    if 'client_id' in update_data:
+        client = await db.clients.find_one({"id": update_data['client_id'], "user_id": current_user.id}, {"_id": 0})
+        if not client:
+            raise HTTPException(status_code=404, detail="Client not found")
+        update_data['client_name'] = client['name']
+    
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No data to update")
+    
     result = await db.leads.update_one(
         {"id": lead_id, "user_id": current_user.id},
-        {"$set": {"status": status}}
+        {"$set": update_data}
     )
+    
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Lead not found")
-    return {"success": True}
+    
+    lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+    if isinstance(lead['created_at'], str):
+        lead['created_at'] = datetime.fromisoformat(lead['created_at'])
+    
+    return Lead(**lead)
 
 @api_router.delete("/leads/{lead_id}")
 async def delete_lead(lead_id: str, current_user: User = Depends(get_current_user)):
