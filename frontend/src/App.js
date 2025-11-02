@@ -28,8 +28,12 @@ function LandingPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const sessionId = location.hash.replace('#session_id=', '');
-    if (sessionId) {
+    const hash = location.hash;
+    const sessionIdMatch = hash.match(/#session_id=([^&]+)/);
+    
+    if (sessionIdMatch && sessionIdMatch[1]) {
+      const sessionId = sessionIdMatch[1];
+      console.log('Session ID detected, processing...');
       processSessionId(sessionId);
     } else {
       checkExistingSession();
@@ -39,16 +43,20 @@ function LandingPage() {
   const processSessionId = async (sessionId) => {
     setLoading(true);
     try {
+      console.log('Processing session ID...');
       const formData = new FormData();
       formData.append('session_id', sessionId);
       
-      await axiosInstance.post('/auth/session', formData);
+      const response = await axiosInstance.post('/auth/session', formData);
+      console.log('Session created successfully:', response.data);
+      
+      // Clean URL and redirect to dashboard
       window.history.replaceState({}, document.title, window.location.pathname);
+      toast.success('Successfully logged in!');
       navigate('/dashboard');
     } catch (error) {
       console.error('Session processing failed:', error);
-      toast.error('Authentication failed');
-    } finally {
+      toast.error('Authentication failed. Please try again.');
       setLoading(false);
     }
   };
@@ -59,6 +67,7 @@ function LandingPage() {
       navigate('/dashboard');
     } catch (error) {
       // Not authenticated, stay on landing
+      console.log('No existing session');
     }
   };
 
