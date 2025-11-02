@@ -1,0 +1,883 @@
+import { useState, useEffect } from "react";
+import "@/App.css";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
+import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Loader2, Plus, Trash2, FileText, Briefcase, Users, TrendingUp, Presentation, LogOut, Sparkles, Edit, Upload, File } from "lucide-react";
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
+
+const axiosInstance = axios.create({
+  baseURL: API,
+  withCredentials: true,
+});
+
+function LandingPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Use window.location.hash to ensure we get the URL fragment
+    const hash = window.location.hash;
+    const sessionIdMatch = hash.match(/#session_id=([^&]+)/);
+    
+    if (sessionIdMatch && sessionIdMatch[1]) {
+      const sessionId = sessionIdMatch[1];
+      console.log('Session ID detected, processing...', sessionId.substring(0, 20) + '...');
+      processSessionId(sessionId);
+    } else {
+      console.log('No session ID in URL, checking existing session');
+      checkExistingSession();
+    }
+  }, []);
+
+  const processSessionId = async (sessionId) => {
+    setLoading(true);
+    try {
+      console.log('Processing session ID...');
+      const formData = new FormData();
+      formData.append('session_id', sessionId);
+      
+      const response = await axiosInstance.post('/auth/session', formData);
+      console.log('Session created successfully:', response.data);
+      
+      // Clean URL and redirect to dashboard
+      window.history.replaceState({}, document.title, window.location.pathname);
+      toast.success('Successfully logged in!');
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Session processing failed:', error);
+      toast.error('Authentication failed. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  const checkExistingSession = async () => {
+    try {
+      await axiosInstance.get('/auth/me');
+      navigate('/dashboard');
+    } catch (error) {
+      // Not authenticated, stay on landing
+      console.log('No existing session');
+    }
+  };
+
+  const handleLogin = () => {
+    const redirectUrl = `${window.location.origin}/`;
+    window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
+  };
+
+  if (loading) {
+    return (
+      <div className=\"min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50\">
+        <div className=\"text-center\" data-testid=\"loading-screen\">
+          <Loader2 className=\"h-12 w-12 animate-spin mx-auto text-indigo-600\" />
+          <p className=\"mt-4 text-slate-600\">Authenticating...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className=\"min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50\">
+      <div className=\"container mx-auto px-4 py-16\">
+        <div className=\"max-w-4xl mx-auto text-center\">
+          <div className=\"mb-8\" data-testid=\"landing-header\">
+            <Presentation className=\"h-20 w-20 mx-auto text-indigo-600 mb-6\" />
+            <h1 className=\"text-5xl lg:text-6xl font-bold text-slate-900 mb-6\">
+              AI Sales Deck Generator
+            </h1>
+            <p className=\"text-lg text-slate-600 max-w-2xl mx-auto mb-8\">
+              Generate customized, high-impact B2B SaaS sales presentations in minutes. 
+              Save 10-15 hours per week and accelerate your sales cycle.
+            </p>
+          </div>
+
+          <div className=\"grid md:grid-cols-3 gap-6 mb-12\">
+            <Card className=\"border-indigo-200 hover:shadow-lg transition-shadow\">
+              <CardContent className=\"pt-6\">
+                <Sparkles className=\"h-10 w-10 text-indigo-600 mx-auto mb-4\" />
+                <h3 className=\"font-semibold text-slate-900 mb-2\">AI-Powered</h3>
+                <p className=\"text-sm text-slate-600\">Generate tailored presentations using advanced AI</p>
+              </CardContent>
+            </Card>
+            <Card className=\"border-indigo-200 hover:shadow-lg transition-shadow\">
+              <CardContent className=\"pt-6\">
+                <TrendingUp className=\"h-10 w-10 text-indigo-600 mx-auto mb-4\" />
+                <h3 className=\"font-semibold text-slate-900 mb-2\">Save Time</h3>
+                <p className=\"text-sm text-slate-600\">10-15 hours saved per week on deck creation</p>
+              </CardContent>
+            </Card>
+            <Card className=\"border-indigo-200 hover:shadow-lg transition-shadow\">
+              <CardContent className=\"pt-6\">
+                <Briefcase className=\"h-10 w-10 text-indigo-600 mx-auto mb-4\" />
+                <h3 className=\"font-semibold text-slate-900 mb-2\">Close Faster</h3>
+                <p className=\"text-sm text-slate-600\">Accelerate sales cycles with targeted pitches</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Button 
+            onClick={handleLogin} 
+            size=\"lg\" 
+            className=\"bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-6 text-lg\"
+            data-testid=\"login-button\"
+          >
+            Get Started with Google
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Dashboard() {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [clients, setClients] = useState([]);
+  const [assets, setAssets] = useState([]);
+  const [leads, setLeads] = useState([]);
+  const [decks, setDecks] = useState([]);
+  const [activeTab, setActiveTab] = useState(\"clients\");
+  
+  // Dialog states
+  const [clientDialogOpen, setClientDialogOpen] = useState(false);
+  const [leadDialogOpen, setLeadDialogOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState(null);
+  const [editingLead, setEditingLead] = useState(null);
+  
+  // Form states
+  const [clientForm, setClientForm] = useState({ name: '', industry: '', description: '' });
+  const [assetForm, setAssetForm] = useState({ type: 'product_description', name: '', content: '' });
+  const [leadForm, setLeadForm] = useState({ client_id: '', project_scope: '', notes: '' });
+  const [assetFile, setAssetFile] = useState(null);
+  const [generating, setGenerating] = useState(false);
+  const [selectedDeck, setSelectedDeck] = useState(null);
+
+  useEffect(() => {
+    fetchUser();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchData();
+    }
+  }, [user, activeTab]);
+
+  const fetchUser = async () => {
+    try {
+      const response = await axiosInstance.get('/auth/me');
+      setUser(response.data);
+    } catch (error) {
+      navigate('/');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchData = async () => {
+    try {
+      const [clientsRes, assetsRes, leadsRes, decksRes] = await Promise.all([
+        axiosInstance.get('/clients'),
+        axiosInstance.get('/assets'),
+        axiosInstance.get('/leads'),
+        axiosInstance.get('/decks')
+      ]);
+      setClients(clientsRes.data);
+      setAssets(assetsRes.data);
+      setLeads(leadsRes.data);
+      setDecks(decksRes.data);
+    } catch (error) {
+      console.error('Failed to fetch data:', error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await axiosInstance.post('/auth/logout');
+      navigate('/');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
+  // Client functions
+  const openClientDialog = (client = null) => {
+    if (client) {
+      setEditingClient(client);
+      setClientForm({ name: client.name, industry: client.industry, description: client.description });
+    } else {
+      setEditingClient(null);
+      setClientForm({ name: '', industry: '', description: '' });
+    }
+    setClientDialogOpen(true);
+  };
+
+  const saveClient = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingClient) {
+        await axiosInstance.patch(`/clients/${editingClient.id}`, clientForm);
+        toast.success('Client updated successfully');
+      } else {
+        await axiosInstance.post('/clients', clientForm);
+        toast.success('Client added successfully');
+      }
+      setClientDialogOpen(false);
+      setClientForm({ name: '', industry: '', description: '' });
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to save client');
+    }
+  };
+
+  const deleteClient = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this client?')) return;
+    try {
+      await axiosInstance.delete(`/clients/${id}`);
+      toast.success('Client deleted');
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to delete client');
+    }
+  };
+
+  // Asset functions
+  const createAsset = async (e) => {
+    e.preventDefault();
+    try {
+      if (assetFile) {
+        const formData = new FormData();
+        formData.append('file', assetFile);
+        formData.append('type', assetForm.type);
+        formData.append('name', assetForm.name);
+        await axiosInstance.post('/assets/upload', formData);
+      } else {
+        await axiosInstance.post('/assets', assetForm);
+      }
+      setAssetForm({ type: 'product_description', name: '', content: '' });
+      setAssetFile(null);
+      toast.success('Asset added successfully');
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to add asset');
+    }
+  };
+
+  const deleteAsset = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this asset?')) return;
+    try {
+      await axiosInstance.delete(`/assets/${id}`);
+      toast.success('Asset deleted');
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to delete asset');
+    }
+  };
+
+  // Lead functions
+  const openLeadDialog = (lead = null) => {
+    if (lead) {
+      setEditingLead(lead);
+      setLeadForm({ client_id: lead.client_id, project_scope: lead.project_scope, notes: lead.notes });
+    } else {
+      setEditingLead(null);
+      setLeadForm({ client_id: '', project_scope: '', notes: '' });
+    }
+    setLeadDialogOpen(true);
+  };
+
+  const saveLead = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingLead) {
+        await axiosInstance.patch(`/leads/${editingLead.id}`, leadForm);
+        toast.success('Lead updated successfully');
+      } else {
+        await axiosInstance.post('/leads', leadForm);
+        toast.success('Lead created successfully');
+      }
+      setLeadDialogOpen(false);
+      setLeadForm({ client_id: '', project_scope: '', notes: '' });
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to save lead');
+    }
+  };
+
+  const deleteLead = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this lead?')) return;
+    try {
+      await axiosInstance.delete(`/leads/${id}`);
+      toast.success('Lead deleted');
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to delete lead');
+    }
+  };
+
+  const generateDeck = async (leadId) => {
+    setGenerating(true);
+    try {
+      const response = await axiosInstance.post('/decks/generate', { lead_id: leadId });
+      toast.success('Sales deck generated!');
+      fetchData();
+      setSelectedDeck(response.data);
+    } catch (error) {
+      toast.error('Failed to generate deck');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const viewDeck = async (deckId) => {
+    try {
+      const response = await axiosInstance.get(`/decks/${deckId}`);
+      setSelectedDeck(response.data);
+    } catch (error) {
+      toast.error('Failed to load deck');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className=\"min-h-screen flex items-center justify-center\">
+        <Loader2 className=\"h-8 w-8 animate-spin text-indigo-600\" />
+      </div>
+    );
+  }
+
+  return (
+    <div className=\"min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50\">
+      <header className=\"bg-white border-b border-slate-200 shadow-sm\">
+        <div className=\"container mx-auto px-4 py-4 flex justify-between items-center\">
+          <div className=\"flex items-center gap-3\">
+            <Presentation className=\"h-8 w-8 text-indigo-600\" />
+            <h1 className=\"text-2xl font-bold text-slate-900\">Sales Deck AI</h1>
+          </div>
+          <div className=\"flex items-center gap-4\">
+            <span className=\"text-sm text-slate-600\" data-testid=\"user-name\">{user?.name}</span>
+            <Button variant=\"outline\" size=\"sm\" onClick={handleLogout} data-testid=\"logout-button\">
+              <LogOut className=\"h-4 w-4 mr-2\" />
+              Logout
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <main className=\"container mx-auto px-4 py-8\">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className=\"space-y-6\">
+          <TabsList className=\"bg-white border border-slate-200 p-1\" data-testid=\"tabs-list\">
+            <TabsTrigger value=\"clients\" className=\"data-[state=active]:bg-indigo-100\" data-testid=\"tab-clients\">
+              <Users className=\"h-4 w-4 mr-2\" />
+              Clients
+            </TabsTrigger>
+            <TabsTrigger value=\"leads\" className=\"data-[state=active]:bg-indigo-100\" data-testid=\"tab-leads\">
+              <Briefcase className=\"h-4 w-4 mr-2\" />
+              Leads
+            </TabsTrigger>
+            <TabsTrigger value=\"assets\" className=\"data-[state=active]:bg-indigo-100\" data-testid=\"tab-assets\">
+              <FileText className=\"h-4 w-4 mr-2\" />
+              Assets
+            </TabsTrigger>
+            <TabsTrigger value=\"decks\" className=\"data-[state=active]:bg-indigo-100\" data-testid=\"tab-decks\">
+              <Presentation className=\"h-4 w-4 mr-2\" />
+              Generated Decks
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Clients Tab */}
+          <TabsContent value=\"clients\" className=\"space-y-6\" data-testid=\"tab-content-clients\">
+            <Card>
+              <CardHeader className=\"flex flex-row items-center justify-between\">
+                <div>
+                  <CardTitle>Clients</CardTitle>
+                  <CardDescription>Manage your client information</CardDescription>
+                </div>
+                <Button onClick={() => openClientDialog()} className=\"bg-indigo-600 hover:bg-indigo-700\" data-testid=\"add-client-button\">
+                  <Plus className=\"h-4 w-4 mr-2\" />
+                  Add Client
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Industry</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead className=\"text-right\">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {clients.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className=\"text-center text-slate-500\">
+                          No clients yet. Add your first client to get started.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      clients.map((client) => (
+                        <TableRow key={client.id} data-testid={`client-row-${client.id}`}>
+                          <TableCell className=\"font-medium\">{client.name}</TableCell>
+                          <TableCell>{client.industry}</TableCell>
+                          <TableCell className=\"max-w-md truncate\">{client.description}</TableCell>
+                          <TableCell className=\"text-right\">
+                            <div className=\"flex justify-end gap-2\">
+                              <Button variant=\"ghost\" size=\"sm\" onClick={() => openClientDialog(client)} data-testid={`edit-client-${client.id}`}>
+                                <Edit className=\"h-4 w-4\" />
+                              </Button>
+                              <Button variant=\"ghost\" size=\"sm\" onClick={() => deleteClient(client.id)} data-testid={`delete-client-${client.id}`}>
+                                <Trash2 className=\"h-4 w-4 text-red-500\" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Leads Tab */}
+          <TabsContent value=\"leads\" className=\"space-y-6\" data-testid=\"tab-content-leads\">
+            <Card>
+              <CardHeader className=\"flex flex-row items-center justify-between\">
+                <div>
+                  <CardTitle>Leads</CardTitle>
+                  <CardDescription>Track and manage your sales leads</CardDescription>
+                </div>
+                <Button onClick={() => openLeadDialog()} className=\"bg-indigo-600 hover:bg-indigo-700\" data-testid=\"add-lead-button\">
+                  <Plus className=\"h-4 w-4 mr-2\" />
+                  Add Lead
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Client</TableHead>
+                      <TableHead>Project Scope</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className=\"text-right\">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {leads.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className=\"text-center text-slate-500\">
+                          No leads yet. Add your first lead to get started.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      leads.map((lead) => (
+                        <TableRow key={lead.id} data-testid={`lead-row-${lead.id}`}>
+                          <TableCell className=\"font-medium\">{lead.client_name}</TableCell>
+                          <TableCell className=\"max-w-xs truncate\">{lead.project_scope}</TableCell>
+                          <TableCell>
+                            <span className=\"px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 capitalize\">
+                              {lead.status}
+                            </span>
+                          </TableCell>
+                          <TableCell className=\"text-right\">
+                            <div className=\"flex justify-end gap-2\">
+                              <Button variant=\"ghost\" size=\"sm\" onClick={() => openLeadDialog(lead)} data-testid={`edit-lead-${lead.id}`}>
+                                <Edit className=\"h-4 w-4\" />
+                              </Button>
+                              <Button variant=\"ghost\" size=\"sm\" onClick={() => deleteLead(lead.id)} data-testid={`delete-lead-${lead.id}`}>
+                                <Trash2 className=\"h-4 w-4 text-red-500\" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+
+            {/* Deck Generation Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className=\"flex items-center gap-2\">
+                  <Sparkles className=\"h-5 w-5 text-indigo-600\" />
+                  Generate Sales Deck
+                </CardTitle>
+                <CardDescription>Select a lead to generate an AI-powered sales presentation</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className=\"space-y-4\">
+                  {leads.length === 0 ? (
+                    <p className=\"text-sm text-slate-500\">Add a lead first to generate sales decks.</p>
+                  ) : (
+                    <div className=\"grid gap-3\">
+                      {leads.map((lead) => (
+                        <div key={lead.id} className=\"flex items-center justify-between p-4 border border-slate-200 rounded-lg bg-white\" data-testid={`deck-gen-${lead.id}`}>
+                          <div>
+                            <p className=\"font-medium text-slate-900\">{lead.client_name}</p>
+                            <p className=\"text-sm text-slate-500\">{lead.project_scope}</p>
+                          </div>
+                          <Button
+                            onClick={() => generateDeck(lead.id)}
+                            disabled={generating}
+                            className=\"bg-indigo-600 hover:bg-indigo-700\"
+                            data-testid={`generate-deck-${lead.id}`}
+                          >
+                            {generating ? (
+                              <Loader2 className=\"h-4 w-4 animate-spin\" />
+                            ) : (
+                              <>
+                                <Sparkles className=\"h-4 w-4 mr-2\" />
+                                Generate Deck
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Assets Tab */}
+          <TabsContent value=\"assets\" className=\"space-y-6\" data-testid=\"tab-content-assets\">
+            <Card>
+              <CardHeader>
+                <CardTitle>Add Knowledge Asset</CardTitle>
+                <CardDescription>Upload documents or paste content</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={createAsset} className=\"space-y-4\">
+                  <div>
+                    <Label>Type</Label>
+                    <Select value={assetForm.type} onValueChange={(val) => setAssetForm({...assetForm, type: val})}>
+                      <SelectTrigger data-testid=\"asset-type-select\">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value=\"product_description\">Product Description</SelectItem>
+                        <SelectItem value=\"use_case\">Industry Use Case</SelectItem>
+                        <SelectItem value=\"general\">General Asset</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Name</Label>
+                    <Input
+                      value={assetForm.name}
+                      onChange={(e) => setAssetForm({...assetForm, name: e.target.value})}
+                      placeholder=\"Asset name\"
+                      required
+                      data-testid=\"asset-name-input\"
+                    />
+                  </div>
+                  <div>
+                    <Label>Upload Document (Optional)</Label>
+                    <div className=\"flex gap-2\">
+                      <Input
+                        type=\"file\"
+                        onChange={(e) => setAssetFile(e.target.files[0])}
+                        accept=\".txt,.pdf,.doc,.docx,.md\"
+                        data-testid=\"asset-file-input\"
+                      />
+                      {assetFile && (
+                        <Button type=\"button\" variant=\"ghost\" size=\"sm\" onClick={() => setAssetFile(null)}>
+                          <Trash2 className=\"h-4 w-4\" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Content (or leave blank if uploading file)</Label>
+                    <Textarea
+                      value={assetForm.content}
+                      onChange={(e) => setAssetForm({...assetForm, content: e.target.value})}
+                      placeholder=\"Paste your content here...\"
+                      rows={6}
+                      required={!assetFile}
+                      data-testid=\"asset-content-textarea\"
+                    />
+                  </div>
+                  <Button type=\"submit\" className=\"bg-indigo-600 hover:bg-indigo-700\" data-testid=\"add-asset-button\">
+                    <Plus className=\"h-4 w-4 mr-2\" />
+                    Add Asset
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            <div className=\"grid gap-4\">
+              {assets.map((asset) => (
+                <Card key={asset.id} data-testid={`asset-card-${asset.id}`}>
+                  <CardHeader>
+                    <div className=\"flex justify-between items-start\">
+                      <div>
+                        <CardTitle className=\"text-lg flex items-center gap-2\">
+                          {asset.file_name && <File className=\"h-4 w-4\" />}
+                          {asset.name}
+                        </CardTitle>
+                        <CardDescription className=\"capitalize\">{asset.type.replace('_', ' ')}</CardDescription>
+                      </div>
+                      <Button variant=\"ghost\" size=\"sm\" onClick={() => deleteAsset(asset.id)} data-testid={`delete-asset-${asset.id}`}>
+                        <Trash2 className=\"h-4 w-4 text-red-500\" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className=\"text-sm text-slate-600 whitespace-pre-wrap\">{asset.content}</p>
+                    {asset.file_name && (
+                      <p className=\"text-xs text-slate-400 mt-2\">Uploaded: {asset.file_name}</p>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          {/* Decks Tab */}
+          <TabsContent value=\"decks\" className=\"space-y-6\" data-testid=\"tab-content-decks\">
+            <div className=\"grid md:grid-cols-2 gap-4\">
+              {decks.length === 0 ? (
+                <Card className=\"col-span-2\">
+                  <CardContent className=\"pt-6 text-center text-slate-500\">
+                    No decks generated yet. Go to Leads tab and generate your first deck!
+                  </CardContent>
+                </Card>
+              ) : (
+                decks.map((deck) => (
+                  <Card key={deck.id} className=\"hover:shadow-lg transition-shadow cursor-pointer\" onClick={() => viewDeck(deck.id)} data-testid={`deck-card-${deck.id}`}>
+                    <CardHeader>
+                      <CardTitle className=\"text-lg\">{deck.content.title || deck.lead_name}</CardTitle>
+                      <CardDescription>
+                        {new Date(deck.created_at).toLocaleDateString()} • {deck.content.slides?.length || 0} slides
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
+                ))
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
+      </main>
+
+      {/* Client Dialog */}
+      <Dialog open={clientDialogOpen} onOpenChange={setClientDialogOpen}>
+        <DialogContent data-testid=\"client-dialog\">
+          <DialogHeader>
+            <DialogTitle>{editingClient ? 'Edit Client' : 'Add Client'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={saveClient} className=\"space-y-4\">
+            <div>
+              <Label>Client Name</Label>
+              <Input
+                value={clientForm.name}
+                onChange={(e) => setClientForm({...clientForm, name: e.target.value})}
+                placeholder=\"Company name\"
+                required
+              />
+            </div>
+            <div>
+              <Label>Industry</Label>
+              <Input
+                value={clientForm.industry}
+                onChange={(e) => setClientForm({...clientForm, industry: e.target.value})}
+                placeholder=\"e.g., Healthcare, Finance, Technology\"
+                required
+              />
+            </div>
+            <div>
+              <Label>Description</Label>
+              <Textarea
+                value={clientForm.description}
+                onChange={(e) => setClientForm({...clientForm, description: e.target.value})}
+                placeholder=\"Brief company description...\"
+                rows={4}
+                required
+              />
+            </div>
+            <DialogFooter>
+              <Button type=\"button\" variant=\"outline\" onClick={() => setClientDialogOpen(false)}>Cancel</Button>
+              <Button type=\"submit\" className=\"bg-indigo-600 hover:bg-indigo-700\">Save</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Lead Dialog */}
+      <Dialog open={leadDialogOpen} onOpenChange={setLeadDialogOpen}>
+        <DialogContent data-testid=\"lead-dialog\">
+          <DialogHeader>
+            <DialogTitle>{editingLead ? 'Edit Lead' : 'Add Lead'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={saveLead} className=\"space-y-4\">
+            <div>
+              <Label>Select Client</Label>
+              <Select value={leadForm.client_id} onValueChange={(val) => setLeadForm({...leadForm, client_id: val})}>
+                <SelectTrigger>
+                  <SelectValue placeholder=\"Choose a client\" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Project Scope</Label>
+              <Textarea
+                value={leadForm.project_scope}
+                onChange={(e) => setLeadForm({...leadForm, project_scope: e.target.value})}
+                placeholder=\"Describe the project requirements...\"
+                rows={4}
+                required
+              />
+            </div>
+            <div>
+              <Label>Notes</Label>
+              <Textarea
+                value={leadForm.notes}
+                onChange={(e) => setLeadForm({...leadForm, notes: e.target.value})}
+                placeholder=\"Additional notes, pain points, meeting minutes...\"
+                rows={4}
+                required
+              />
+            </div>
+            <DialogFooter>
+              <Button type=\"button\" variant=\"outline\" onClick={() => setLeadDialogOpen(false)}>Cancel</Button>
+              <Button type=\"submit\" className=\"bg-indigo-600 hover:bg-indigo-700\">Save</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Deck Viewer Dialog */}
+      <Dialog open={selectedDeck !== null} onOpenChange={() => setSelectedDeck(null)}>
+        <DialogContent className=\"max-w-4xl max-h-[90vh] overflow-y-auto\" data-testid=\"deck-viewer-dialog\">
+          {selectedDeck && (
+            <div className=\"presentation-viewer\">
+              <DialogHeader>
+                <DialogTitle className=\"text-2xl\">{selectedDeck.content.title}</DialogTitle>
+              </DialogHeader>
+              <div className=\"space-y-8 mt-6\">
+                {selectedDeck.content.slides?.map((slide, index) => (
+                  <div key={index} className=\"slide-content p-6 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-lg border border-indigo-200\" data-testid={`slide-${index}`}>
+                    {slide.type === 'title' && (
+                      <div className=\"text-center py-12\">
+                        <h2 className=\"text-4xl font-bold text-slate-900 mb-4\">{slide.title}</h2>
+                        <p className=\"text-xl text-slate-600\">{slide.subtitle}</p>
+                      </div>
+                    )}
+                    {slide.type === 'problem' && (
+                      <div>
+                        <h3 className=\"text-2xl font-bold text-slate-900 mb-4\">{slide.title}</h3>
+                        <ul className=\"space-y-2\">
+                          {slide.points?.map((point, i) => (
+                            <li key={i} className=\"flex items-start gap-2\">
+                              <span className=\"text-indigo-600 font-bold\">•</span>
+                              <span className=\"text-slate-700\">{point}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {slide.type === 'solution' && (
+                      <div>
+                        <h3 className=\"text-2xl font-bold text-slate-900 mb-4\">{slide.title}</h3>
+                        <p className=\"text-slate-700 mb-4\">{slide.description}</p>
+                        <ul className=\"space-y-2\">
+                          {slide.points?.map((point, i) => (
+                            <li key={i} className=\"flex items-start gap-2\">
+                              <span className=\"text-indigo-600 font-bold\">✓</span>
+                              <span className=\"text-slate-700\">{point}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {slide.type === 'features' && (
+                      <div>
+                        <h3 className=\"text-2xl font-bold text-slate-900 mb-4\">{slide.title}</h3>
+                        <div className=\"grid md:grid-cols-2 gap-4\">
+                          {slide.features?.map((feature, i) => (
+                            <div key={i} className=\"bg-white p-4 rounded-lg\">
+                              <h4 className=\"font-semibold text-slate-900 mb-2\">{feature.name}</h4>
+                              <p className=\"text-sm text-slate-600\">{feature.description}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {slide.type === 'use_case' && (
+                      <div>
+                        <h3 className=\"text-2xl font-bold text-slate-900 mb-4\">{slide.title}</h3>
+                        <p className=\"text-slate-700\">{slide.description}</p>
+                      </div>
+                    )}
+                    {slide.type === 'roi' && (
+                      <div>
+                        <h3 className=\"text-2xl font-bold text-slate-900 mb-4\">{slide.title}</h3>
+                        <div className=\"grid md:grid-cols-2 gap-4\">
+                          {slide.metrics?.map((metric, i) => (
+                            <div key={i} className=\"bg-white p-6 rounded-lg text-center\">
+                              <p className=\"text-3xl font-bold text-indigo-600 mb-2\">{metric.value}</p>
+                              <p className=\"text-sm text-slate-600\">{metric.label}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {slide.type === 'cta' && (
+                      <div className=\"text-center py-8\">
+                        <h3 className=\"text-2xl font-bold text-slate-900 mb-4\">{slide.title}</h3>
+                        <p className=\"text-slate-700 mb-6\">{slide.description}</p>
+                        <div className=\"inline-block px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold\">
+                          {slide.action}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Toaster position=\"top-right\" />
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <div className=\"App\">
+      <BrowserRouter>
+        <Routes>
+          <Route path=\"/\" element={<LandingPage />} />
+          <Route path=\"/dashboard\" element={<Dashboard />} />
+        </Routes>
+      </BrowserRouter>
+    </div>
+  );
+}
+
+export default App;
