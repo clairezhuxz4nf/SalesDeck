@@ -63,7 +63,7 @@ function LandingPage() {
   };
 
   const handleLogin = () => {
-    const redirectUrl = `${window.location.origin}/dashboard`;
+    const redirectUrl = `${window.location.origin}/`;
     window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
   };
 
