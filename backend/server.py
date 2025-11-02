@@ -132,6 +132,8 @@ async def get_current_user(session_token: Optional[str] = Cookie(None), authoriz
 async def create_session(response: Response, session_id: str = Form(...)):
     import httpx
     
+    logger.info(f"Creating session for session_id: {session_id[:20]}...")
+    
     async with httpx.AsyncClient() as client:
         auth_response = await client.get(
             "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
@@ -139,14 +141,17 @@ async def create_session(response: Response, session_id: str = Form(...)):
         )
         
         if auth_response.status_code != 200:
+            logger.error(f"Auth service returned {auth_response.status_code}")
             raise HTTPException(status_code=400, detail="Invalid session ID")
         
         user_data = auth_response.json()
+        logger.info(f"User data retrieved: {user_data.get('email')}")
     
     # Check if user exists
     existing_user = await db.users.find_one({"email": user_data['email']}, {"_id": 0})
     
     if not existing_user:
+        logger.info(f"Creating new user: {user_data['email']}")
         user = User(
             id=user_data['id'],
             email=user_data['email'],
@@ -156,6 +161,8 @@ async def create_session(response: Response, session_id: str = Form(...)):
         user_dict = user.model_dump()
         user_dict['created_at'] = user_dict['created_at'].isoformat()
         await db.users.insert_one(user_dict)
+    else:
+        logger.info(f"Existing user found: {user_data['email']}")
     
     # Create session
     session_token = user_data['session_token']
@@ -172,6 +179,7 @@ async def create_session(response: Response, session_id: str = Form(...)):
     session_dict['created_at'] = session_dict['created_at'].isoformat()
     
     await db.user_sessions.insert_one(session_dict)
+    logger.info(f"Session created successfully for user: {user_data['email']}")
     
     # Set cookie
     response.set_cookie(
@@ -184,6 +192,7 @@ async def create_session(response: Response, session_id: str = Form(...)):
         path="/"
     )
     
+    logger.info("Cookie set successfully")
     return {"success": True, "session_token": session_token}
 
 @api_router.get("/auth/me")
