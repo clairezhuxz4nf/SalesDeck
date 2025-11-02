@@ -381,6 +381,10 @@ function Dashboard() {
       <main className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="bg-white border border-slate-200 p-1" data-testid="tabs-list">
+            <TabsTrigger value="assets" className="data-[state=active]:bg-indigo-100" data-testid="tab-assets">
+              <FileText className="h-4 w-4 mr-2" />
+              Assets
+            </TabsTrigger>
             <TabsTrigger value="clients" className="data-[state=active]:bg-indigo-100" data-testid="tab-clients">
               <Users className="h-4 w-4 mr-2" />
               Clients
@@ -388,14 +392,6 @@ function Dashboard() {
             <TabsTrigger value="leads" className="data-[state=active]:bg-indigo-100" data-testid="tab-leads">
               <Briefcase className="h-4 w-4 mr-2" />
               Leads
-            </TabsTrigger>
-            <TabsTrigger value="assets" className="data-[state=active]:bg-indigo-100" data-testid="tab-assets">
-              <FileText className="h-4 w-4 mr-2" />
-              Assets
-            </TabsTrigger>
-            <TabsTrigger value="decks" className="data-[state=active]:bg-indigo-100" data-testid="tab-decks">
-              <Presentation className="h-4 w-4 mr-2" />
-              Generated Decks
             </TabsTrigger>
           </TabsList>
 
