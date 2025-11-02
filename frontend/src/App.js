@@ -665,6 +665,98 @@ function Dashboard() {
         </Tabs>
       </main>
 
+      {/* Client Dialog */}
+      <Dialog open={clientDialogOpen} onOpenChange={setClientDialogOpen}>
+        <DialogContent data-testid="client-dialog">
+          <DialogHeader>
+            <DialogTitle>{editingClient ? 'Edit Client' : 'Add Client'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={saveClient} className="space-y-4">
+            <div>
+              <Label>Client Name</Label>
+              <Input
+                value={clientForm.name}
+                onChange={(e) => setClientForm({...clientForm, name: e.target.value})}
+                placeholder="Company name"
+                required
+              />
+            </div>
+            <div>
+              <Label>Industry</Label>
+              <Input
+                value={clientForm.industry}
+                onChange={(e) => setClientForm({...clientForm, industry: e.target.value})}
+                placeholder="e.g., Healthcare, Finance, Technology"
+                required
+              />
+            </div>
+            <div>
+              <Label>Description</Label>
+              <Textarea
+                value={clientForm.description}
+                onChange={(e) => setClientForm({...clientForm, description: e.target.value})}
+                placeholder="Brief company description..."
+                rows={4}
+                required
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setClientDialogOpen(false)}>Cancel</Button>
+              <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700">Save</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Lead Dialog */}
+      <Dialog open={leadDialogOpen} onOpenChange={setLeadDialogOpen}>
+        <DialogContent data-testid="lead-dialog">
+          <DialogHeader>
+            <DialogTitle>{editingLead ? 'Edit Lead' : 'Add Lead'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={saveLead} className="space-y-4">
+            <div>
+              <Label>Select Client</Label>
+              <Select value={leadForm.client_id} onValueChange={(val) => setLeadForm({...leadForm, client_id: val})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a client" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Project Scope</Label>
+              <Textarea
+                value={leadForm.project_scope}
+                onChange={(e) => setLeadForm({...leadForm, project_scope: e.target.value})}
+                placeholder="Describe the project requirements..."
+                rows={4}
+                required
+              />
+            </div>
+            <div>
+              <Label>Notes</Label>
+              <Textarea
+                value={leadForm.notes}
+                onChange={(e) => setLeadForm({...leadForm, notes: e.target.value})}
+                placeholder="Additional notes, pain points, meeting minutes..."
+                rows={4}
+                required
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setLeadDialogOpen(false)}>Cancel</Button>
+              <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700">Save</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Deck Viewer Dialog */}
       <Dialog open={selectedDeck !== null} onOpenChange={() => setSelectedDeck(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" data-testid="deck-viewer-dialog">
           {selectedDeck && (
