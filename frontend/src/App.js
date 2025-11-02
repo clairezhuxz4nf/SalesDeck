@@ -255,11 +255,21 @@ function Dashboard() {
     }
   };
 
+  // Asset functions
   const createAsset = async (e) => {
     e.preventDefault();
     try {
-      await axiosInstance.post('/assets', assetForm);
+      if (assetFile) {
+        const formData = new FormData();
+        formData.append('file', assetFile);
+        formData.append('type', assetForm.type);
+        formData.append('name', assetForm.name);
+        await axiosInstance.post('/assets/upload', formData);
+      } else {
+        await axiosInstance.post('/assets', assetForm);
+      }
       setAssetForm({ type: 'product_description', name: '', content: '' });
+      setAssetFile(null);
       toast.success('Asset added successfully');
       fetchData();
     } catch (error) {
@@ -268,6 +278,7 @@ function Dashboard() {
   };
 
   const deleteAsset = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this asset?')) return;
     try {
       await axiosInstance.delete(`/assets/${id}`);
       toast.success('Asset deleted');
