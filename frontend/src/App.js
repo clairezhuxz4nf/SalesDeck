@@ -214,19 +214,38 @@ function Dashboard() {
     }
   };
 
-  const createClient = async (e) => {
+  // Client functions
+  const openClientDialog = (client = null) => {
+    if (client) {
+      setEditingClient(client);
+      setClientForm({ name: client.name, industry: client.industry, description: client.description });
+    } else {
+      setEditingClient(null);
+      setClientForm({ name: '', industry: '', description: '' });
+    }
+    setClientDialogOpen(true);
+  };
+
+  const saveClient = async (e) => {
     e.preventDefault();
     try {
-      await axiosInstance.post('/clients', clientForm);
+      if (editingClient) {
+        await axiosInstance.patch(`/clients/${editingClient.id}`, clientForm);
+        toast.success('Client updated successfully');
+      } else {
+        await axiosInstance.post('/clients', clientForm);
+        toast.success('Client added successfully');
+      }
+      setClientDialogOpen(false);
       setClientForm({ name: '', industry: '', description: '' });
-      toast.success('Client added successfully');
       fetchData();
     } catch (error) {
-      toast.error('Failed to add client');
+      toast.error('Failed to save client');
     }
   };
 
   const deleteClient = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this client?')) return;
     try {
       await axiosInstance.delete(`/clients/${id}`);
       toast.success('Client deleted');
