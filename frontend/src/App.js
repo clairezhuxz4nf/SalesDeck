@@ -527,91 +527,103 @@ function Dashboard() {
 
           <TabsContent value="leads" className="space-y-6" data-testid="tab-content-leads">
             <Card>
-              <CardHeader>
-                <CardTitle>Create Lead</CardTitle>
-                <CardDescription>Link a client and define project scope</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Leads</CardTitle>
+                  <CardDescription>Track and manage your sales leads</CardDescription>
+                </div>
+                <Button onClick={() => openLeadDialog()} className="bg-indigo-600 hover:bg-indigo-700" data-testid="add-lead-button">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Lead
+                </Button>
               </CardHeader>
               <CardContent>
-                <form onSubmit={createLead} className="space-y-4">
-                  <div>
-                    <Label>Select Client</Label>
-                    <Select value={leadForm.client_id} onValueChange={(val) => setLeadForm({...leadForm, client_id: val})}>
-                      <SelectTrigger data-testid="lead-client-select">
-                        <SelectValue placeholder="Choose a client" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {clients.map((client) => (
-                          <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Project Scope</Label>
-                    <Textarea
-                      value={leadForm.project_scope}
-                      onChange={(e) => setLeadForm({...leadForm, project_scope: e.target.value})}
-                      placeholder="Describe the project requirements..."
-                      rows={4}
-                      required
-                      data-testid="lead-scope-textarea"
-                    />
-                  </div>
-                  <div>
-                    <Label>Notes</Label>
-                    <Textarea
-                      value={leadForm.notes}
-                      onChange={(e) => setLeadForm({...leadForm, notes: e.target.value})}
-                      placeholder="Additional notes, pain points, meeting minutes..."
-                      rows={4}
-                      required
-                      data-testid="lead-notes-textarea"
-                    />
-                  </div>
-                  <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700" data-testid="add-lead-button">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Lead
-                  </Button>
-                </form>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Client</TableHead>
+                      <TableHead>Project Scope</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {leads.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center text-slate-500">
+                          No leads yet. Add your first lead to get started.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      leads.map((lead) => (
+                        <TableRow key={lead.id} data-testid={`lead-row-${lead.id}`}>
+                          <TableCell className="font-medium">{lead.client_name}</TableCell>
+                          <TableCell className="max-w-xs truncate">{lead.project_scope}</TableCell>
+                          <TableCell>
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 capitalize">
+                              {lead.status}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button variant="ghost" size="sm" onClick={() => openLeadDialog(lead)} data-testid={`edit-lead-${lead.id}`}>
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => deleteLead(lead.id)} data-testid={`delete-lead-${lead.id}`}>
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
 
-            <div className="grid gap-4">
-              {leads.map((lead) => (
-                <Card key={lead.id} data-testid={`lead-card-${lead.id}`}>
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-lg">{lead.client_name}</CardTitle>
-                        <CardDescription className="capitalize">{lead.status}</CardDescription>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => generateDeck(lead.id)}
-                          disabled={generating}
-                          className="bg-indigo-600 hover:bg-indigo-700"
-                          data-testid={`generate-deck-${lead.id}`}
-                        >
-                          {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-                          Generate Deck
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => deleteLead(lead.id)} data-testid={`delete-lead-${lead.id}`}>
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-indigo-600" />
+                  Generate Sales Deck
+                </CardTitle>
+                <CardDescription>Select a lead to generate an AI-powered sales presentation</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {leads.length === 0 ? (
+                    <p className="text-sm text-slate-500">Add a lead first to generate sales decks.</p>
+                  ) : (
+                    <div className="grid gap-3">
+                      {leads.map((lead) => (
+                        <div key={lead.id} className="flex items-center justify-between p-4 border border-slate-200 rounded-lg bg-white" data-testid={`deck-gen-${lead.id}`}>
+                          <div>
+                            <p className="font-medium text-slate-900">{lead.client_name}</p>
+                            <p className="text-sm text-slate-500">{lead.project_scope}</p>
+                          </div>
+                          <Button
+                            onClick={() => generateDeck(lead.id)}
+                            disabled={generating}
+                            className="bg-indigo-600 hover:bg-indigo-700"
+                            data-testid={`generate-deck-${lead.id}`}
+                          >
+                            {generating ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <>
+                                <Sparkles className="h-4 w-4 mr-2" />
+                                Generate Deck
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      ))}
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium text-slate-700">Project Scope:</p>
-                      <p className="text-sm text-slate-600 whitespace-pre-wrap">{lead.project_scope}</p>
-                      <p className="text-sm font-medium text-slate-700 mt-4">Notes:</p>
-                      <p className="text-sm text-slate-600 whitespace-pre-wrap">{lead.notes}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="decks" className="space-y-6" data-testid="tab-content-decks">
