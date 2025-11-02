@@ -643,21 +643,6 @@ function Dashboard() {
               </CardContent>
             </Card>
           </TabsContent>
-
-          <TabsContent value="decks" className="space-y-6" data-testid="tab-content-decks">
-            <div className="grid md:grid-cols-2 gap-4">
-              {decks.map((deck) => (
-                <Card key={deck.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => viewDeck(deck.id)} data-testid={`deck-card-${deck.id}`}>
-                  <CardHeader>
-                    <CardTitle className="text-lg">{deck.content.title || deck.lead_name}</CardTitle>
-                    <CardDescription>
-                      {new Date(deck.created_at).toLocaleDateString()} • {deck.content.slides?.length || 0} slides
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
         </Tabs>
       </main>
 
