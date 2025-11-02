@@ -28,17 +28,19 @@ function LandingPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const hash = location.hash;
+    // Use window.location.hash to ensure we get the URL fragment
+    const hash = window.location.hash;
     const sessionIdMatch = hash.match(/#session_id=([^&]+)/);
     
     if (sessionIdMatch && sessionIdMatch[1]) {
       const sessionId = sessionIdMatch[1];
-      console.log('Session ID detected, processing...');
+      console.log('Session ID detected, processing...', sessionId.substring(0, 20) + '...');
       processSessionId(sessionId);
     } else {
+      console.log('No session ID in URL, checking existing session');
       checkExistingSession();
     }
-  }, [location]);
+  }, []);
 
   const processSessionId = async (sessionId) => {
     setLoading(true);
