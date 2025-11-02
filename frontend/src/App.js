@@ -151,12 +151,19 @@ function Dashboard() {
   const [assets, setAssets] = useState([]);
   const [leads, setLeads] = useState([]);
   const [decks, setDecks] = useState([]);
-  const [activeTab, setActiveTab] = useState("assets");
+  const [activeTab, setActiveTab] = useState("clients");
+  
+  // Dialog states
+  const [clientDialogOpen, setClientDialogOpen] = useState(false);
+  const [leadDialogOpen, setLeadDialogOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState(null);
+  const [editingLead, setEditingLead] = useState(null);
   
   // Form states
   const [clientForm, setClientForm] = useState({ name: '', industry: '', description: '' });
   const [assetForm, setAssetForm] = useState({ type: 'product_description', name: '', content: '' });
   const [leadForm, setLeadForm] = useState({ client_id: '', project_scope: '', notes: '' });
+  const [assetFile, setAssetFile] = useState(null);
   const [generating, setGenerating] = useState(false);
   const [selectedDeck, setSelectedDeck] = useState(null);
 
