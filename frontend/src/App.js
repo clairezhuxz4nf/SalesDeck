@@ -473,71 +473,56 @@ function Dashboard() {
 
           <TabsContent value="clients" className="space-y-6" data-testid="tab-content-clients">
             <Card>
-              <CardHeader>
-                <CardTitle>Add Client</CardTitle>
-                <CardDescription>Manage your client information</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Clients</CardTitle>
+                  <CardDescription>Manage your client information</CardDescription>
+                </div>
+                <Button onClick={() => openClientDialog()} className="bg-indigo-600 hover:bg-indigo-700" data-testid="add-client-button">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Client
+                </Button>
               </CardHeader>
               <CardContent>
-                <form onSubmit={createClient} className="space-y-4">
-                  <div>
-                    <Label>Client Name</Label>
-                    <Input
-                      value={clientForm.name}
-                      onChange={(e) => setClientForm({...clientForm, name: e.target.value})}
-                      placeholder="Company name"
-                      required
-                      data-testid="client-name-input"
-                    />
-                  </div>
-                  <div>
-                    <Label>Industry</Label>
-                    <Input
-                      value={clientForm.industry}
-                      onChange={(e) => setClientForm({...clientForm, industry: e.target.value})}
-                      placeholder="e.g., Healthcare, Finance, Technology"
-                      required
-                      data-testid="client-industry-input"
-                    />
-                  </div>
-                  <div>
-                    <Label>Description</Label>
-                    <Textarea
-                      value={clientForm.description}
-                      onChange={(e) => setClientForm({...clientForm, description: e.target.value})}
-                      placeholder="Brief company description..."
-                      rows={4}
-                      required
-                      data-testid="client-description-textarea"
-                    />
-                  </div>
-                  <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700" data-testid="add-client-button">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Client
-                  </Button>
-                </form>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Industry</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {clients.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center text-slate-500">
+                          No clients yet. Add your first client to get started.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      clients.map((client) => (
+                        <TableRow key={client.id} data-testid={`client-row-${client.id}`}>
+                          <TableCell className="font-medium">{client.name}</TableCell>
+                          <TableCell>{client.industry}</TableCell>
+                          <TableCell className="max-w-md truncate">{client.description}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button variant="ghost" size="sm" onClick={() => openClientDialog(client)} data-testid={`edit-client-${client.id}`}>
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => deleteClient(client.id)} data-testid={`delete-client-${client.id}`}>
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              {clients.map((client) => (
-                <Card key={client.id} data-testid={`client-card-${client.id}`}>
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-lg">{client.name}</CardTitle>
-                        <CardDescription>{client.industry}</CardDescription>
-                      </div>
-                      <Button variant="ghost" size="sm" onClick={() => deleteClient(client.id)} data-testid={`delete-client-${client.id}`}>
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-slate-600">{client.description}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
           </TabsContent>
 
           <TabsContent value="leads" className="space-y-6" data-testid="tab-content-leads">
