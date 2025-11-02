@@ -151,7 +151,7 @@ function Dashboard() {
   const [assets, setAssets] = useState([]);
   const [leads, setLeads] = useState([]);
   const [decks, setDecks] = useState([]);
-  const [activeTab, setActiveTab] = useState("clients");
+  const [activeTab, setActiveTab] = useState("assets");
   
   // Dialog states
   const [clientDialogOpen, setClientDialogOpen] = useState(false);
