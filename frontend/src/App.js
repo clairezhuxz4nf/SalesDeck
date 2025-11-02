@@ -403,7 +403,7 @@ function Dashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>Add Knowledge Asset</CardTitle>
-                <CardDescription>Product descriptions, use cases, and documentation</CardDescription>
+                <CardDescription>Upload documents or paste content</CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={createAsset} className="space-y-4">
@@ -431,13 +431,29 @@ function Dashboard() {
                     />
                   </div>
                   <div>
-                    <Label>Content</Label>
+                    <Label>Upload Document (Optional)</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="file"
+                        onChange={(e) => setAssetFile(e.target.files[0])}
+                        accept=".txt,.pdf,.doc,.docx,.md"
+                        data-testid="asset-file-input"
+                      />
+                      {assetFile && (
+                        <Button type="button" variant="ghost" size="sm" onClick={() => setAssetFile(null)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Content (or leave blank if uploading file)</Label>
                     <Textarea
                       value={assetForm.content}
                       onChange={(e) => setAssetForm({...assetForm, content: e.target.value})}
                       placeholder="Paste your content here..."
                       rows={6}
-                      required
+                      required={!assetFile}
                       data-testid="asset-content-textarea"
                     />
                   </div>
@@ -455,7 +471,10 @@ function Dashboard() {
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <div>
-                        <CardTitle className="text-lg">{asset.name}</CardTitle>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          {asset.file_name && <File className="h-4 w-4" />}
+                          {asset.name}
+                        </CardTitle>
                         <CardDescription className="capitalize">{asset.type.replace('_', ' ')}</CardDescription>
                       </div>
                       <Button variant="ghost" size="sm" onClick={() => deleteAsset(asset.id)} data-testid={`delete-asset-${asset.id}`}>
@@ -465,6 +484,9 @@ function Dashboard() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-slate-600 whitespace-pre-wrap">{asset.content}</p>
+                    {asset.file_name && (
+                      <p className="text-xs text-slate-400 mt-2">Uploaded: {asset.file_name}</p>
+                    )}
                   </CardContent>
                 </Card>
               ))}
