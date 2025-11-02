@@ -288,19 +288,38 @@ function Dashboard() {
     }
   };
 
-  const createLead = async (e) => {
+  // Lead functions
+  const openLeadDialog = (lead = null) => {
+    if (lead) {
+      setEditingLead(lead);
+      setLeadForm({ client_id: lead.client_id, project_scope: lead.project_scope, notes: lead.notes });
+    } else {
+      setEditingLead(null);
+      setLeadForm({ client_id: '', project_scope: '', notes: '' });
+    }
+    setLeadDialogOpen(true);
+  };
+
+  const saveLead = async (e) => {
     e.preventDefault();
     try {
-      await axiosInstance.post('/leads', leadForm);
+      if (editingLead) {
+        await axiosInstance.patch(`/leads/${editingLead.id}`, leadForm);
+        toast.success('Lead updated successfully');
+      } else {
+        await axiosInstance.post('/leads', leadForm);
+        toast.success('Lead created successfully');
+      }
+      setLeadDialogOpen(false);
       setLeadForm({ client_id: '', project_scope: '', notes: '' });
-      toast.success('Lead created successfully');
       fetchData();
     } catch (error) {
-      toast.error('Failed to create lead');
+      toast.error('Failed to save lead');
     }
   };
 
   const deleteLead = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this lead?')) return;
     try {
       await axiosInstance.delete(`/leads/${id}`);
       toast.success('Lead deleted');
